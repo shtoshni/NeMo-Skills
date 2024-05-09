@@ -110,7 +110,7 @@ def normalize(answer) -> str:
         return answer[1:]
 
     if isinstance(answer, str) and bool(re.match(r'\\\\\d+(\.\d+)?', answer)):
-        return answer[3:]
+        return answer[2:]
 
     if isinstance(answer, str) and bool(re.match(r'\$\\\\\d+(\.\d+)?', answer)):
         return answer[3:]
