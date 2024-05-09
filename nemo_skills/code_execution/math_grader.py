@@ -109,6 +109,12 @@ def normalize(answer) -> str:
     if isinstance(answer, str) and bool(re.match(r'\$\d+(\.\d+)?', answer)):
         return answer[1:]
 
+    if isinstance(answer, str) and bool(re.match(r'\\\\\d+(\.\d+)?', answer)):
+        return answer[3:]
+
+    if isinstance(answer, str) and bool(re.match(r'\$\\\\\d+(\.\d+)?', answer)):
+        return answer[3:]
+    
     # checking if answer is <number>% or <number>\\% and removing %
     if isinstance(answer, str) and (
         bool(re.match(r'^\d+(\.\d+)?%$', answer)) or bool(re.match(r'^\d+(\.\d+)?\\%$', answer))
