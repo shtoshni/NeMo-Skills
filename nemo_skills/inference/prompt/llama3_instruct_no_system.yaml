@@ -1,0 +1,22 @@
+few_shot_examples:
+  template: "Question:\n{question}\n\n{context}My solution:\n{generated_solution}\n\n\n\n\n\n"
+
+system: |-
+
+user: |-
+    Make sure to put the answer (and only answer) inside \boxed{{}}.
+
+    {examples}
+    Question:
+    {question}
+
+    {context}
+
+prompt_template: |-
+  <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+  {system}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+stop_phrases: ["<|eot_id|>"]
