@@ -44,7 +44,7 @@ LOG = logging.getLogger(__file__)
 def get_default_prompt_config():
     # by default reading code_sfted.yaml, but users can override
     with open(
-        Path(__file__).parents[1] / "inference" / "prompt" / f"code_sfted.yaml",
+        Path(__file__).parents[1] / "inference" / "prompt" / f"llama3_sfted.yaml",
         "rt",
         encoding="utf-8",
     ) as fin:
