@@ -21,6 +21,7 @@ sys.path.append(str(Path(__file__).absolute().parents[1]))
 
 from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, get_server_command, launch_job
 
+from nemo_skills.inference.prompt.utils import context_templates, datasets, examples_map, prompt_types
 from nemo_skills.utils import setup_logging
 
 SLURM_CMD = """
@@ -28,20 +29,20 @@ nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
 {server_start_cmd} && \
-if [ $SLURM_PROCID -eq 0 ]; then \
+if [ $SLURM_LOCALID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/Running on all addresses/ q' && \
     python nemo_skills/inference/generate_solutions.py \
         server.server_type={server_type} \
         skip_filled=True \
         inference.random_seed={random_seed} \
-        inference.temperature=1.0 \
+        inference.temperature={temperature} \
         inference.top_k=0 \
         inference.top_p=0.95 \
         output_file=/results/output-rs{random_seed}.jsonl \
         {extra_arguments} && \
     python nemo_skills/evaluation/evaluate_results.py \
-        prediction_jsonl_files=/results/output-rs{random_seed}.jsonl {extra_eval_args} && \
+        prediction_jsonl_files=/results/output-rs{random_seed}.jsonl && \
     kill %1; \
 else \
     sleep infinity; \
@@ -57,7 +58,7 @@ LOGS = "{output_dir}/slurm_logs-rs{random_seed}.txt"
 JOB_NAME = "labelling-{model_name}-rs{random_seed}"
 
 
-def run_script(format_dict, seed, extra_arguments, partition=None, dependency=None, num_server_nodes=1):
+def run_script(format_dict, seed, extra_arguments, partition=None, dependency=None):
     format_dict["random_seed"] = seed
     format_dict["extra_arguments"] = extra_arguments
 
@@ -68,7 +69,7 @@ def run_script(format_dict, seed, extra_arguments, partition=None, dependency=No
 
     job_id = launch_job(
         cmd=SLURM_CMD.format(**format_dict),
-        num_nodes=num_server_nodes,
+        num_nodes=1,
         tasks_per_node=format_dict["num_tasks"],
         gpus_per_node=format_dict["num_gpus"],
         job_name=JOB_NAME.format(**format_dict),
@@ -91,12 +92,6 @@ if __name__ == "__main__":
     parser.add_argument("--num_runs", type=int, default=1)
     parser.add_argument("--num_gpus", type=int, required=True)
     parser.add_argument(
-        "--num_server_nodes",
-        type=int,
-        default=1,
-        help="Number of nodes required for hosting LLM server.",
-    )
-    parser.add_argument(
         "--dependent_jobs",
         type=int,
         default=0,
@@ -110,10 +105,12 @@ if __name__ == "__main__":
         help="Can specify if need interactive jobs or a specific non-default partition",
     )
     parser.add_argument(
-        "--extra_eval_args",
-        default="",
-        help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
+        "--temperature",
+        required=False,
+        default=1.0,
+        help="Sampling temperature"   
     )
+
     args, unknown = parser.parse_known_args()
 
     args.model_path = Path(args.model_path).absolute()
@@ -121,9 +118,10 @@ if __name__ == "__main__":
 
     extra_arguments = f'{" ".join(unknown)}'
 
-    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_server_nodes)
+    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus)
 
     format_dict = {
+        "temperature": args.temperature,
         "model_path": args.model_path,
         "model_name": args.model_path.name,
         "output_dir": args.output_dir,
@@ -131,22 +129,14 @@ if __name__ == "__main__":
         "server_start_cmd": server_start_cmd,
         "num_tasks": num_tasks,
         "server_type": args.server_type,
-        "extra_eval_args": args.extra_eval_args,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
     }
 
     Path(args.output_dir).mkdir(exist_ok=True, parents=True)
 
     for seed in range(args.starting_seed, args.starting_seed + args.num_runs):
-        job_id = run_script(format_dict, seed, extra_arguments, args.partition, num_server_nodes=args.num_server_nodes)
+        job_id = run_script(format_dict, seed, extra_arguments, args.partition)
         print(f"Submitted batch job {job_id}")
         for _ in range(args.dependent_jobs):
-            job_id = run_script(
-                format_dict,
-                seed,
-                extra_arguments,
-                args.partition,
-                dependency=job_id,
-                num_server_nodes=args.num_server_nodes,
-            )
+            job_id = run_script(format_dict, seed, extra_arguments, args.partition, dependency=job_id)
             print(f"Submitted batch job {job_id}")

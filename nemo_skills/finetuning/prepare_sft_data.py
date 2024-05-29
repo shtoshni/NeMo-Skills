@@ -124,7 +124,7 @@ def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict
                 continue
             # skipping any incomplete generations
             if "is_correct" not in line_dict:
-                LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
+                # LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
                 continue
 
             if not cfg.add_correct and line_dict["is_correct"]:
