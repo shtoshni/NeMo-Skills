@@ -24,5 +24,6 @@ build
 *.egg-info
 *.xml
 *.DS_Store
+slurm_*.yaml
 
 __pycache__
