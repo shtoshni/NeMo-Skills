@@ -14,4 +14,4 @@ user: |-
 
 prompt_template: "<|begin_of_text|>{user}My solution:\n"
 
-stop_phrases: ["\n\n\n\n\n\n"]
+stop_phrases: ["\n\n\n\n\n\n", "<|eot_id|>"]
