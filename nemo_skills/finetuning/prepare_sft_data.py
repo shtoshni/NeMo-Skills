@@ -103,6 +103,7 @@ def read_preprocessed_data(file_paths, grouped_samples: Dict[str, List]):
         with open(file_path, "rt", encoding="utf-8") as file_handle:
             for line in tqdm.tqdm(file_handle):
                 sample = json.loads(line)
+                sample["generated_solution"] = sample["output"]
                 grouped_samples[sample["question"]].append(sample)
 
 
@@ -132,7 +133,8 @@ def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict
 
             if not cfg.add_incorrect and not line_dict["is_correct"]:
                 continue
-
+            
+            
             if line_dict["generated_solution"] in seen_predictions:
                 continue
             seen_predictions.add(line_dict["generated_solution"])
