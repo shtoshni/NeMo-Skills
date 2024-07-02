@@ -364,3 +364,10 @@ def format_intervals(prediction):
                 return f"({inner_content})"
 
     return prediction
+
+
+if __name__ == '__main__':
+    print(math_equal('\frac{25}{16}', '\cfrac{25}{16}'))
+    print(math_equal('\frac{25}{16}', '\dfrac{25}{16}'))
+    print(math_equal('\cfrac{25}{16}', '\dfrac{25}{16}'))
+    print(math_equal('\frac{25}{16}', '\frac{25}{16}'))
